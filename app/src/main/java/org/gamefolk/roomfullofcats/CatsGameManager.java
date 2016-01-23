@@ -123,6 +123,7 @@ public class CatsGameManager
 			level.message = "... but those people are fucking stupid.";
 			level.title = "Level 2";
 		}
+
 		return level;
 	}
 }

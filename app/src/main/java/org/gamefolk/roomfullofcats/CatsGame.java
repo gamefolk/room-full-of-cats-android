@@ -4,8 +4,11 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.Random;
 
+import android.app.Activity;
 import android.content.Context;
 import android.graphics.Canvas;
+import android.os.CountDownTimer;
+import android.os.Looper;
 import android.util.Log;
 import android.view.MotionEvent;
 import android.view.ViewGroup;
@@ -37,12 +40,13 @@ public class CatsGame extends GameView
     private Vector2d catSize; // in pixels, set according to the size of the screen in onSizeChanged()
     
     private int catsLimit;
-    private int score, curLevelTime;
+    private int score;
+    private long curLevelTime;
     
     private TimerAsync fallTimer;
     private TimerUI animationTimer;
-    private CountdownTimer levelTimer;
-        
+    private Thread levelTimerThread;
+
     private BitmapResourceManager bitmapResources;
     
     private final Random rGen = new Random();
@@ -66,32 +70,48 @@ public class CatsGame extends GameView
     public void makeLevel(final Level level) {
         map = new CatsMap(level.mapWidth, level.mapHeight);
     	this.catsLimit = level.catsLimit;
-    	
-    	levelUIView.titleView.setText(level.title);
-    	
+
+        ((Activity)levelUIView.getContext()).runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                levelUIView.titleView.setText(level.title);
+            }
+        });
+
     	bucketsY = new int[map.getWidth()];
     	
     	for (int col = 0; col < map.getWidth(); col++) {
     		bucketsY[col] = map.getHeight()-1;
     	}
-    	
-    	levelTimer = new CountdownTimer(level.levelTime, 1f, CatsGame.this) {
-            @Override
-            public void onFinish() {
-                Log.v(TAG, "game over");
-                animationTimer.pause();
-                fallTimer.pause();
-                map.clear();
-                CatsGameManager.curLevel++;
-                CatsGameManager.startLevel();
-            }
 
+        levelTimerThread = new Thread() {
             @Override
-            public void onTic(int remaining) {
-            	curLevelTime = remaining;
+            public void run() {
+                Looper.prepare();
+
+                new CountDownTimer(level.levelTime * 1000, 1) {
+                    @Override
+                    public void onFinish() {
+                        Log.v(TAG, "game over");
+                        animationTimer.pause();
+                        fallTimer.pause();
+                        map.clear();
+                        CatsGameManager.curLevel++;
+
+                        CatsGameManager.startLevel();
+                    }
+
+                    @Override
+                    public void onTick(long remaining) {
+                        curLevelTime = remaining;
+                    }
+                }.start();
+
+                Looper.loop();
             }
         };
-        
+    	
+
         animationTimer = new TimerUI(.2f, CatsGame.this, new Delegate() {
             public void function(Object... args) {
                 for (int x = 0; x < map.getWidth(); x++) {
@@ -284,7 +304,7 @@ public class CatsGame extends GameView
     protected void startGame() {
         fallTimer.start();  
         animationTimer.start();
-        levelTimer.start();
+        levelTimerThread.start();
         //SoundManager.setVolume(GLITCH_CHANNEL, 0, 0);
         SoundManager.loopSound(SONG_CHANNEL);
         //SoundManager.loopSound(GLITCH_CHANNEL);
