@@ -37,6 +37,7 @@ public class CatsGameActivity extends GameActivity {
         adView.loadAd(adRequest);
 
         loadGame();
+        startGame();
     }
 
     private void loadGame() {
@@ -92,7 +93,6 @@ public class CatsGameActivity extends GameActivity {
 
                 contentView.addView(gameView.levelUIView, new LayoutParams(LayoutParams.FILL_PARENT, 0, .05f));
                 contentView.addView(gameView, new LayoutParams(LayoutParams.FILL_PARENT, 0, .80f));
-                contentView.addView(adView, new LayoutParams(LayoutParams.FILL_PARENT, 0, .15f));
             }
         });
         gameLoaderThread.start();
