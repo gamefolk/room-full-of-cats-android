@@ -29,11 +29,9 @@ public class CatsGame extends GameView
     private static final int GLITCH_CHANNEL = 3;
     
     private final int incSize = 20; // the amount by which to increase the size of cats as they collect    
-    
-    private Cat[][] map;
+
+    private CatsMap map;
     private int bucketsY[];
-    
-    private int mapWidth, mapHeight;
     
     private Vector2d mapLoc; // in pixels, the top left corner of the top left column of cats on the screen
     private Vector2d catSize; // in pixels, set according to the size of the screen in onSizeChanged()
@@ -65,18 +63,16 @@ public class CatsGame extends GameView
     	levelUIView.timeView.setText("Time: " + curLevelTime);
     }
         
-    public void makeLevel(final Level level) {    	
-    	this.mapWidth = level.mapWidth;
-    	this.mapHeight = level.mapHeight;
+    public void makeLevel(final Level level) {
+        map = new CatsMap(level.mapWidth, level.mapHeight);
     	this.catsLimit = level.catsLimit;
     	
     	levelUIView.titleView.setText(level.title);
     	
-    	map = new Cat[mapWidth][mapHeight];
-    	bucketsY = new int[mapWidth];
+    	bucketsY = new int[map.getWidth()];
     	
-    	for (int col = 0; col < mapWidth; col++) {
-    		bucketsY[col] = mapHeight-1;
+    	for (int col = 0; col < map.getWidth(); col++) {
+    		bucketsY[col] = map.getHeight()-1;
     	}
     	
     	levelTimer = new CountdownTimer(level.levelTime, 1f, CatsGame.this) {
@@ -85,9 +81,7 @@ public class CatsGame extends GameView
                 Log.v(TAG, "game over");
                 animationTimer.pause();
                 fallTimer.pause();
-                for (Cat[] row : map) {
-                    Arrays.fill(row, null);
-                }
+                map.clear();
                 CatsGameManager.curLevel++;
                 CatsGameManager.startLevel();
             }
@@ -100,9 +94,9 @@ public class CatsGame extends GameView
         
         animationTimer = new TimerUI(.2f, CatsGame.this, new Delegate() {
             public void function(Object... args) {
-                for (int x = 0; x < mapWidth; x++) {
-                    for (int y = 0; y < mapHeight; y++) {
-                        Cat cat = map[x][y];
+                for (int x = 0; x < map.getWidth(); x++) {
+                    for (int y = 0; y < map.getHeight(); y++) {
+                        Cat cat = map.getCat(x, y);
                         if (cat != null) {
                             CatsGame.this.setSpriteBitmap(cat.sprite, cat.type.bitmapFrames[cat.curFrame++]);
                             if (cat.curFrame == cat.type.bitmapFrames.length) {
@@ -117,14 +111,14 @@ public class CatsGame extends GameView
         fallTimer = new TimerAsync(level.fallTime, this, new Delegate() {
             public void function(Object... args) {      
                 
-                for (int col = 0; col < mapWidth; col++) {
+                for (int col = 0; col < map.getWidth(); col++) {
                 	for (int row = bucketsY[col]-1; row >= 0; row--) {
                 		
-                		Cat candidate = map[col][row];
+                		Cat candidate = map.getCat(col, row);
                 		
                 		if (candidate != null) {
-                			
-                			Cat current = map[col][bucketsY[col]];
+
+                			Cat current = map.getCat(col, bucketsY[col]);
                 			
                 			if (current != null && bucketsY[col] - row == 1) {
                 				
@@ -140,14 +134,14 @@ public class CatsGame extends GameView
                                         if (!SoundManager.isPlaying(SCORE_CHANNEL)) {
                                             SoundManager.playSound(SCORE_CHANNEL);
                                         }
-                                        map[col][bucketsY[col]] = null;
+                                        map.setCat(col, bucketsY[col], null);
                                         
-                                        if (bucketsY[col] < mapHeight-1) {
+                                        if (bucketsY[col] < map.getHeight() - 1) {
                                         	bucketsY[col]++;
                                         }
                                     }
                                     
-                                    map[col][row] = null;
+                                    map.setCat(col, row, null);
                                     
                 				} else {
                 					bucketsY[col]--;
@@ -155,28 +149,25 @@ public class CatsGame extends GameView
                 				
                 			} else {
                 				candidate.sprite.translate(0, catSize.y);
-                				map[col][row] = null;
-                                map[col][row+1] = candidate;
+                				map.setCat(col, row, null);
+                                map.setCat(col, row+1, candidate);
                 			}
                 		}
                 	}
                 }
                 
                 // fill the top row with new cats
-                for (int x = 0; x < mapWidth; x++) {
-                	if (map[x][0] == null) {
+                for (int x = 0; x < map.getWidth(); x++) {
+                	if (map.getCat(x, 0) == null) {
                 		
                 		CatType type = CatType.values()[rGen.nextInt(4)];                   
-                		map[x][0] = new Cat(type, makeSprite(type.bitmapId, mapLoc.x + (x * catSize.x), mapLoc.y));
-                		
+                		map.setCat(x, 0, new Cat(type, makeSprite(type.bitmapId, mapLoc.x + (x * catSize.x), mapLoc.y)));
                 	} else {
                 		
                 		Log.v(TAG, "game over");
                         animationTimer.pause();
                         fallTimer.pause();
-                        for (Cat[] row : map) {
-                            Arrays.fill(row, null);
-                        }
+                        map.clear();
                 	}
                 }
             }
@@ -185,11 +176,12 @@ public class CatsGame extends GameView
     
     @Override
     public boolean onTouchEvent(MotionEvent event) {
-        for (int x = 0; x < mapWidth; x++) {
+        for (int x = 0; x < map.getWidth(); x++) {
             for (int y = 0; y < bucketsY[x]; y++) {
-                if (map[x][y] != null) {
-                    if (map[x][y].sprite.getBounds().contains((int)event.getX(), (int)event.getY())) {
-                        map[x][y] = null;
+                Cat cat = map.getCat(x, y);
+                if (cat != null) {
+                    if (cat.sprite.getBounds().contains((int)event.getX(), (int)event.getY())) {
+                        map.setCat(x, y, null);
                     }
                 }
             }
@@ -199,10 +191,11 @@ public class CatsGame extends GameView
     
     @Override
     protected void onDraw(Canvas canvas) {              
-        for (int x = 0; x < mapWidth; x++) {
-            for (int y = 0; y < mapHeight; y++) {
-                if (map[x][y] != null) {
-                    map[x][y].sprite.draw(canvas);
+        for (int x = 0; x < map.getWidth(); x++) {
+            for (int y = 0; y < map.getHeight(); y++) {
+                Cat cat = map.getCat(x, y);
+                if (cat != null) {
+                    cat.sprite.draw(canvas);
                 }
             }
         }
@@ -236,13 +229,13 @@ public class CatsGame extends GameView
     @Override
     protected void setupGame(int screenWidth, int screenHeight) {    	
         // room for each row/column of cats + 1 cat worth of margin on the sides
-        int tempX = screenWidth / (mapWidth + 1); 
-        int tempY = screenHeight / (mapHeight + 1);
+        int tempX = screenWidth / (map.getWidth() + 1);
+        int tempY = screenHeight / (map.getHeight() + 1);
         
         int catXY = tempX < tempY ? tempX : tempY;
         
         catSize = new Vector2d(catXY, catXY);
-        mapLoc = new Vector2d((screenWidth - (mapWidth * catSize.x)) / 2, (screenHeight - (mapHeight * catSize.y)) / 2);
+        mapLoc = new Vector2d((screenWidth - (map.getWidth() * catSize.x)) / 2, (screenHeight - (map.getHeight() * catSize.y)) / 2);
         
         int frame1, frame2, frame3, glitchFrame;
                 
