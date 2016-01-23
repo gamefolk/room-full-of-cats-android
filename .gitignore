@@ -5,7 +5,6 @@ dist
 gen
 gen_ios
 libs
-res
 .settings
 .classpath
 .project
