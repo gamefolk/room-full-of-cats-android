@@ -1,7 +1,10 @@
 package org.gamefolk.roomfullofcats;
 
+import java.io.IOException;
+import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Properties;
 
 import android.content.Context;
 import android.content.Intent;
@@ -29,7 +32,8 @@ public class CatsAd extends BannerAdView
 	private Paint backgroundPaint = new Paint();
 	private Paint borderPaint = new Paint();
 	private int borderWidth;
-	private int backgroundRadius; 
+	private int backgroundRadius;
+	private Properties adProperties = new Properties();
 	
 	private static final String TAG = "RoomFullOfCats";
 	
@@ -43,8 +47,15 @@ public class CatsAd extends BannerAdView
 		backgroundPaint.setAntiAlias(true);
 		backgroundPaint.setColor(0xFFF7F7F7); // iOS7ish gray color 
 		borderPaint.setColor(Color.BLACK);
+
+		try {
+			InputStream inputStream = context.getResources().openRawResource(context.getResources().getIdentifier("environment", "raw", context.getPackageName()));
+			adProperties.load(inputStream);
+		} catch (IOException e) {
+			throw new RuntimeException(e);
+		}
 	}
-	
+
 	@Override
 	public void adLoaded(final NativeAd ad) {
 		Log.v(TAG, "ad loaded");
@@ -76,7 +87,7 @@ public class CatsAd extends BannerAdView
 
 		imageAssets.put("icon", new Vector2d(newHeight, newHeight));
 		textTypes.add("description");
-		adManager = new NativeAdManager(getContext(), this, ApiKeys.getMobFoxPublisherId(), null, textTypes, imageAssets);
+		adManager = new NativeAdManager(getContext(), this, this.adProperties.getProperty("mobfox.id.android"), null, textTypes, imageAssets);
 		adManager.requestAd();
 	}
 	

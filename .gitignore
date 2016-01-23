@@ -1,4 +1,3 @@
-syntax: glob
 assets
 bin
 build
@@ -21,3 +20,12 @@ nbproject/build-Java.xml
 proguard-project.txt
 project.properties
 src/org/gamefolk/roomfullofcats/ApiKeys.java
+
+*.iml
+.gradle
+/local.properties
+/.idea/workspace.xml
+/.idea/libraries
+.DS_Store
+/build
+/captures

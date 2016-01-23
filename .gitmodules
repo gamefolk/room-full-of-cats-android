@@ -1,0 +1,3 @@
+[submodule "absurdengine"]
+	path = absurdengine
+	url = https://github.com/smpsnr/absurd-engine-android
