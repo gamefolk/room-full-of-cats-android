@@ -9,7 +9,6 @@ import java.io.StringWriter;
 import java.io.Writer;
 
 import com.arcadeoftheabsurd.absurdengine.DeviceUtility;
-import com.eclipsesource.json.JsonObject;
 
 import android.app.Activity;
 import android.content.Context;
@@ -17,6 +16,9 @@ import android.util.Log;
 import android.view.Gravity;
 import android.widget.TextView;
 import android.widget.Toast;
+
+import org.json.JSONException;
+import org.json.JSONObject;
 
 class Level
 {
@@ -78,7 +80,7 @@ public class CatsGameManager
 		level.number = curLevel;
 		
 		if (curLevel == 1) {
-			InputStream input = context.getResources().openRawResource(context.getResources().getIdentifier("level1", "raw", "org.gamefolk.roomfullofcats"));
+			InputStream input = context.getResources().openRawResource(context.getResources().getIdentifier("level1", "raw", context.getPackageName()));
 			Writer writer = new StringWriter();
 			char[] buffer = new char[1024];
 			try {
@@ -96,17 +98,22 @@ public class CatsGameManager
 				Log.e(TAG, "error reading level json");
 			}			
 			Log.v(TAG, "json: " + writer.toString());
-			JsonObject mainObject = JsonObject.readFrom(writer.toString());
-			
-			Log.v(TAG, "level: " + mainObject.get("levelTitle").asString());
-			
-			level.mapWidth = mainObject.get("columns").asInt();
-			level.mapHeight = mainObject.get("rows").asInt();
-			level.levelTime = mainObject.get("timeLimit").asInt();
+
+			JSONObject mainObject;
+			try {
+				mainObject = new JSONObject(writer.toString());
+				Log.v(TAG, "level: " + mainObject.getString("levelTitle"));
+				level.mapWidth = mainObject.getInt("columns");
+				level.mapHeight = mainObject.getInt("rows");
+				level.levelTime = mainObject.getInt("timeLimit");
+				level.message = mainObject.getString("levelDescription");
+				level.title = mainObject.getString("levelTitle");
+			} catch (JSONException e) {
+				throw new RuntimeException("Could not read JSON", e);
+			}
+
 			level.fallTime = 1;
 			level.catsLimit = 3;
-			level.message = mainObject.get("levelDescription").asString();
-			level.title = mainObject.get("levelTitle").asString();
 		} else if (curLevel == 2) {
 			level.mapWidth = 5;
 			level.mapHeight = 5;
