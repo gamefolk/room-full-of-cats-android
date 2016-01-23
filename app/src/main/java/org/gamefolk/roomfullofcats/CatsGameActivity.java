@@ -2,8 +2,6 @@ package org.gamefolk.roomfullofcats;
 
 import android.os.Bundle;
 import android.util.Log;
-import android.view.View;
-import android.view.View.OnClickListener;
 import android.view.Window;
 import android.view.WindowManager;
 import android.widget.LinearLayout;
@@ -31,17 +29,6 @@ public class CatsGameActivity extends GameActivity {
         requestWindowFeature(Window.FEATURE_NO_TITLE);
 
         super.onCreate(savedInstanceState);
-
-        final CatsMenu catsMenu = new CatsMenu(this, new OnClickListener() {
-            public void onClick(View arg0) {
-                try {
-                    deviceLoaderThread.join();
-                } catch (InterruptedException e) {
-                    Thread.currentThread().interrupt();
-                }
-                startGame();
-            }
-        }, null);
 
         setContentView(R.layout.activity_cats_game);
 
@@ -111,6 +98,8 @@ public class CatsGameActivity extends GameActivity {
         gameLoaderThread.start();
 
         // call initializeGame and initializeContentView on the main thread, starting the game
+        initializeGame();
+        initializeContentView();
         loadContent();
     }
 }

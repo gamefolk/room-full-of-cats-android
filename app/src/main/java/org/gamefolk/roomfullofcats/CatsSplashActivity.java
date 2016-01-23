@@ -2,7 +2,6 @@ package org.gamefolk.roomfullofcats;
 
 import android.app.Activity;
 import android.content.Intent;
-import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.view.View;
 import android.widget.LinearLayout;
@@ -17,7 +16,7 @@ public class CatsSplashActivity extends Activity {
         LinearLayout layout = (LinearLayout) findViewById(R.id.splash_layout);
         layout.setOnClickListener(new View.OnClickListener() {
            public void onClick(View arg0) {
-               startActivity(new Intent(CatsSplashActivity.this, CatsGameActivity.class));
+               startActivity(new Intent(CatsSplashActivity.this, CatsMenuActivity.class));
                finish();
            }
         });
