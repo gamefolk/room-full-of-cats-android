@@ -1,0 +1,23 @@
+syntax: glob
+assets
+bin
+build
+dist
+gen
+gen_ios
+libs
+res
+.settings
+.classpath
+.project
+.settings/org.eclipse.jdt.core.prefs
+build.properties
+build.xml
+default.properties
+local.properties
+nbproject/build-Android.xml
+nbproject/build-impl.xml
+nbproject/build-Java.xml
+proguard-project.txt
+project.properties
+src/org/gamefolk/roomfullofcats/ApiKeys.java
