@@ -2,10 +2,13 @@ package org.gamefolk.roomfullofcats;
 
 import android.os.Bundle;
 import android.util.Log;
+import android.view.View;
+import android.view.ViewGroup;
 import android.view.Window;
 import android.view.WindowManager;
 import android.widget.LinearLayout;
 import android.widget.LinearLayout.LayoutParams;
+import android.widget.RelativeLayout;
 
 import com.arcadeoftheabsurd.absurdengine.DeviceUtility;
 import com.arcadeoftheabsurd.absurdengine.GameActivity;
@@ -14,9 +17,9 @@ import com.google.android.gms.ads.AdRequest;
 import com.google.android.gms.ads.AdView;
 
 public class CatsGameActivity extends GameActivity {
-    private LinearLayout contentView;
     private CatsGame gameView;
     private AdView adView;
+    private RelativeLayout contentView;
 
     private Thread deviceLoaderThread;
     private Thread gameLoaderThread;
@@ -38,6 +41,10 @@ public class CatsGameActivity extends GameActivity {
 
         loadGame();
         startGame();
+    }
+
+    @Override protected View initializeContentView() {
+        return contentView;
     }
 
     private void loadGame() {
@@ -66,16 +73,13 @@ public class CatsGameActivity extends GameActivity {
         return gameView;
     }
 
-    protected LinearLayout initializeContentView() {
-        return contentView;
-    }
-
     @SuppressWarnings("deprecation")
     private void startGame() {
         Log.v(TAG, "finished loading");
         Log.v(TAG, "ip: " + DeviceUtility.getLocalIp());
         Log.v(TAG, "user agent: " + DeviceUtility.getUserAgent());
 
+        contentView = (RelativeLayout) findViewById(R.id.game_view);
         gameView = new CatsGame(this, this, contentView);
 
         CatsGameManager.initialize(this, gameView);
@@ -84,14 +88,10 @@ public class CatsGameActivity extends GameActivity {
 
         CatsGameManager.displayLevelMessage(level1.message);
 
-        contentView = new LinearLayout(this);
-        contentView.setOrientation(LinearLayout.VERTICAL);
-
         gameLoaderThread = new Thread(new Runnable() {
             public void run() {
                 gameView.makeLevel(level1);
 
-                contentView.addView(gameView.levelUIView, new LayoutParams(LayoutParams.FILL_PARENT, 0, .05f));
                 contentView.addView(gameView, new LayoutParams(LayoutParams.FILL_PARENT, 0, .80f));
             }
         });
