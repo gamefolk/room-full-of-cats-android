@@ -3,11 +3,8 @@ package org.gamefolk.roomfullofcats;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
-import android.view.ViewGroup;
 import android.view.Window;
 import android.view.WindowManager;
-import android.widget.LinearLayout;
-import android.widget.LinearLayout.LayoutParams;
 import android.widget.RelativeLayout;
 
 import com.arcadeoftheabsurd.absurdengine.DeviceUtility;
@@ -33,26 +30,33 @@ public class CatsGameActivity extends GameActivity {
 
         super.onCreate(savedInstanceState);
 
-        setContentView(R.layout.activity_cats_game);
+        setContentView(R.layout.activity_cats_menu);
 
-        adView = (AdView) findViewById(R.id.adView);
+        findViewById(R.id.start_button).setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                try {
+                    deviceLoaderThread.join();
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                }
+                startGame();
+            }
+        });
+
+        loadGame();
+    }
+
+    @Override
+    protected View initializeContentView() {
+        adView = (AdView) contentView.findViewById(R.id.adView);
         AdRequest adRequest = new AdRequest.Builder().build();
         adView.loadAd(adRequest);
 
-        loadGame();
-        startGame();
-    }
-
-    @Override protected View initializeContentView() {
         return contentView;
     }
 
     private void loadGame() {
-        Log.v(TAG, "checking ad services");
-        Log.v(TAG, "ad services available");
-
-        Log.v(TAG, "getting device info");
-
         DeviceUtility.setUserAgent(this);
 
         deviceLoaderThread = new Thread(new Runnable() {
@@ -73,13 +77,12 @@ public class CatsGameActivity extends GameActivity {
         return gameView;
     }
 
-    @SuppressWarnings("deprecation")
     private void startGame() {
         Log.v(TAG, "finished loading");
         Log.v(TAG, "ip: " + DeviceUtility.getLocalIp());
         Log.v(TAG, "user agent: " + DeviceUtility.getUserAgent());
 
-        contentView = (RelativeLayout) findViewById(R.id.game_view);
+        contentView = (RelativeLayout) getLayoutInflater().inflate(R.layout.activity_cats_game, null);
         gameView = new CatsGame(this, this, contentView);
 
         CatsGameManager.initialize(this, gameView);
@@ -90,17 +93,14 @@ public class CatsGameActivity extends GameActivity {
 
         gameLoaderThread = new Thread(new Runnable() {
             public void run() {
+                gameView.init();
                 gameView.makeLevel(level1);
-
-                contentView.addView(gameView, new LayoutParams(LayoutParams.FILL_PARENT, 0, .80f));
-            }
+                contentView.addView(gameView);
+             }
         });
         gameLoaderThread.start();
 
         // call initializeGame and initializeContentView on the main thread, starting the game
-        initializeGame();
-        initializeContentView();
         loadContent();
     }
 }
-

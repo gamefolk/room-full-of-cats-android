@@ -16,7 +16,7 @@ public class CatsSplashActivity extends Activity {
         LinearLayout layout = (LinearLayout) findViewById(R.id.splash_layout);
         layout.setOnClickListener(new View.OnClickListener() {
            public void onClick(View arg0) {
-               startActivity(new Intent(CatsSplashActivity.this, CatsMenuActivity.class));
+               startActivity(new Intent(CatsSplashActivity.this, CatsGameActivity.class));
                finish();
            }
         });

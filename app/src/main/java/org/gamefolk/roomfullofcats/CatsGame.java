@@ -1,7 +1,6 @@
 package org.gamefolk.roomfullofcats;
 
 import java.io.IOException;
-import java.util.Arrays;
 import java.util.Random;
 
 import android.app.Activity;
@@ -11,6 +10,7 @@ import android.os.CountDownTimer;
 import android.os.Looper;
 import android.util.Log;
 import android.view.MotionEvent;
+import android.view.View;
 import android.view.ViewGroup;
 import android.widget.TextView;
 
@@ -45,6 +45,8 @@ public class CatsGame extends GameView {
     private TimerUI animationTimer;
     private Thread levelTimerThread;
 
+    View viewRoot;
+
     TextView timeView;
     TextView scoreView;
     TextView titleView;
@@ -57,10 +59,13 @@ public class CatsGame extends GameView {
 
     public CatsGame(Context context, GameLoadListener loadListener, ViewGroup viewRoot) {
         super(context, loadListener);
+        this.viewRoot = viewRoot;
+    }
 
-        scoreView = (TextView) findViewById(R.id.score);
-        timeView = (TextView) findViewById(R.id.time);
-        titleView = (TextView) findViewById(R.id.title);
+    public void init() {
+        scoreView = (TextView) viewRoot.findViewById(R.id.score);
+        timeView = (TextView) viewRoot.findViewById(R.id.time);
+        titleView = (TextView) viewRoot.findViewById(R.id.title);
 
         bitmapResources = new BitmapResourceManager(getResources(), 16);
         loadResources();
