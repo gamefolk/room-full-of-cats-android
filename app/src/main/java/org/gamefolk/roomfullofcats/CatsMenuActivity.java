@@ -5,26 +5,50 @@ import android.content.Context;
 import android.content.Intent;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.hardware.Sensor;
+import android.hardware.SensorEvent;
+import android.hardware.SensorEventListener;
+import android.hardware.SensorManager;
 import android.opengl.GLSurfaceView;
 import android.opengl.GLUtils;
 import android.os.Bundle;
-import android.os.SystemClock;
+import android.util.Log;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.RelativeLayout;
+import android.widget.TextView;
+
+import com.arcadeoftheabsurd.j_utils.Delegate;
 
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.FloatBuffer;
+import java.text.DecimalFormat;
 
 import javax.microedition.khronos.egl.EGLConfig;
 import javax.microedition.khronos.opengles.GL10;
 
-public class CatsMenuActivity extends Activity {
+public class CatsMenuActivity extends Activity implements SensorEventListener {
+
+    private static final String TAG = "RoomFullOfCats";
+
+    private static final int SENSOR_TYPE = Sensor.TYPE_ROTATION_VECTOR;
+    private static final int INIT_DELAY = 5;  // reject the first 5 rotation sensor readings
 
     private GLSurfaceView glSurfaceView;
 
-    private static final String TAG = "RoomFullOfCats";
+    private SensorManager sensorManager;
+    private Sensor rotationSensor;
+
+    private Delegate sensorDelegate;
+    private int delay;
+    private boolean hasSensor = false;
+
+    private float[] rotDeviceCurr = new float[9];
+    private float[] rotDeviceInit = new float[9];
+
+    private float[] orientation = new float[3];
+
+    private TextView orientationView;
 
     class MenuRenderer implements GLSurfaceView.Renderer {
 
@@ -33,6 +57,8 @@ public class CatsMenuActivity extends Activity {
 
         private FloatBuffer vertexBuffer;
         private FloatBuffer textureBuffer;
+
+        private float aspect;
 
         float vertices[] = {
                 -1.0f, -1.0f,  0.0f,        // V1 - bottom left
@@ -94,7 +120,7 @@ public class CatsMenuActivity extends Activity {
         @Override
         public void onSurfaceChanged(GL10 gl, int width, int height) {
             gl.glViewport(0, 0, width, height);
-            float aspect = (float)width / height;
+            aspect = (float)width / height;
             gl.glMatrixMode(GL10.GL_PROJECTION);
             gl.glLoadIdentity();
             gl.glFrustumf(-aspect, aspect, -1.0f, 1.0f, 1.0f, 10.0f);
@@ -107,13 +133,15 @@ public class CatsMenuActivity extends Activity {
 
             gl.glMatrixMode(GL10.GL_MODELVIEW);
             gl.glLoadIdentity();
-            gl.glTranslatef(0.0f, 0.0f, -3.0f);
+
+            gl.glTranslatef(0.0f, 0.0f, -2.0f);
+            gl.glScalef(aspect, 1.0f, 1.0f);
+
+            gl.glRotatef((float)Math.toDegrees(orientation[1]), 1.0f, 0.0f, 0.0f);
+            gl.glRotatef((float)Math.toDegrees(orientation[2]), 0.0f, 1.0f, 0.0f);
+            gl.glRotatef((float)Math.toDegrees(orientation[0]), 0.0f, 0.0f, 1.0f);
 
             gl.glBindTexture(GL10.GL_TEXTURE_2D, textures[0]);
-
-            long time = SystemClock.uptimeMillis() % 10000L;
-            float angle = (360.0f / 10000.0f) * ((int) time);
-            gl.glRotatef(angle, 0, 1, 0);
 
             gl.glEnableClientState(GL10.GL_VERTEX_ARRAY);
             gl.glEnableClientState(GL10.GL_TEXTURE_COORD_ARRAY);
@@ -134,6 +162,16 @@ public class CatsMenuActivity extends Activity {
 
         setContentView(R.layout.activity_cats_menu);
 
+        sensorManager = (SensorManager) getSystemService(Context.SENSOR_SERVICE);
+
+        if((rotationSensor = sensorManager.getDefaultSensor(SENSOR_TYPE)) == null) {
+            Log.e(TAG, "rotation vector sensor unavailable");
+        } else {
+            sensorDelegate = processOrientationInit;
+            hasSensor = true;
+            orientationView = (TextView)findViewById(R.id.textView);
+        }
+
         glSurfaceView = new GLSurfaceView(this);
         glSurfaceView.setRenderer(
                 new MenuRenderer(BitmapFactory.decodeResource(getResources(), R.drawable.menu)));
@@ -153,6 +191,10 @@ public class CatsMenuActivity extends Activity {
     protected void onResume() {
         super.onResume();
         glSurfaceView.onResume();
+
+        if (hasSensor) {
+            sensorManager.registerListener(this, rotationSensor, SensorManager.SENSOR_DELAY_NORMAL);
+        }
     }
 
     @Override
@@ -160,4 +202,47 @@ public class CatsMenuActivity extends Activity {
         super.onPause();
         glSurfaceView.onPause();
     }
+
+    private Delegate processOrientationInit = new Delegate() {
+        @Override
+        public void function(Object... args) {
+            if (delay >= INIT_DELAY) {
+                rotDeviceInit = rotDeviceCurr.clone();
+                sensorDelegate = processOrientation;
+            } else {
+                delay++;
+            }
+        }
+    };
+
+    private Delegate processOrientation = new Delegate() {
+        @Override
+        public void function(Object... args) {
+            SensorManager.getAngleChange(orientation, rotDeviceCurr, rotDeviceInit);
+
+            DecimalFormat df = new DecimalFormat("#.#####");
+
+            orientationView.setText(
+                    "Yaw: " + df.format(orientation[0]) +
+                    "\nPitch: " + df.format(orientation[1]) +
+                    "\nRoll: " + df.format(orientation[2]));
+        }
+    };
+
+    @Override
+    public void onSensorChanged(SensorEvent event) {
+        if (event.sensor.getType() == SENSOR_TYPE) {
+
+            float[] rotWorld = new float[9];
+
+            SensorManager.getRotationMatrixFromVector(rotWorld, event.values.clone());
+            SensorManager.remapCoordinateSystem(
+                    rotWorld, SensorManager.AXIS_X, SensorManager.AXIS_Y, rotDeviceCurr);
+
+            sensorDelegate.function();
+        }
+    }
+
+    @Override
+    public void onAccuracyChanged(Sensor sensor, int accuracy) {}
 }
