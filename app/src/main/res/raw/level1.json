@@ -1,0 +1,9 @@
+{
+	"levelTitle": "Level One",
+	"levelDescription": "Some people say you should plan your game before coding it...",
+	"levelType": ["time"],
+	"rows": 4,
+	"columns": 4,
+	"requiredScore": 500,
+	"timeLimit": 5
+}
